@@ -31,13 +31,13 @@ function bodyDataHas(propertyName) {
     };
 };
 
-function priceValidation(req, res, next) {
-    const { data: { price } = {} } = req.body;
-    if(price && price > 1 && price !== 0 && !isNaN(price)) {
-        return next();
-    }
-    next({ status: 400, mesage: `Price: ${price} is invalid`});
-}
+// function priceValidation(req, res, next) {
+//     const { data: { price } = {} } = req.body;
+//     if(price && price > 1 && price !== 0 && !isNaN(price)) {
+//         return next();
+//     }
+//     next({ status: 400, mesage: `Price: ${price} is invalid`});
+// }
 
 // function ifIdIsPresent(req, res, next) {
 //     const { dishId } = req.params;
@@ -98,7 +98,6 @@ module.exports ={
         bodyDataHas("description"),
         bodyDataHas("price"),
         bodyDataHas("image_url"),
-        priceValidation,
         create
     ],
     read: [ dishExists, read ],
