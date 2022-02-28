@@ -47,15 +47,6 @@ function ifIdIsPresent(req, res, next) {
     };
 };
 
-// function priceValidation(req, res, next) {
-//     const { data: { price } = {} } = req.body;
-//     if(price < 0) {
-//         return next({ status: 400, mesage: `Price: ${price} is invalid`});
-//     } else {
-//         return next();
-//     }
-// }
-
 function pricePropertyIsValid(req, res, next) {
     const { data: { name, price, description, image_url } = {} } = req.body;
     if(!price){
