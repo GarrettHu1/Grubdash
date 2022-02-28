@@ -1,4 +1,5 @@
 const path = require("path");
+const { stringify } = require("querystring");
 
 // Use the existing dishes data
 const dishes = require(path.resolve("src/data/dishes-data"));
@@ -33,18 +34,27 @@ function bodyDataHas(propertyName) {
 
 // function priceValidation(req, res, next) {
 //     const { data: { price } = {} } = req.body;
-//     if(price && price > 1 && price !== 0 && !isNaN(price)) {
+//     if(!isNaN(price)) {
 //         return next();
+//     } else {
+//         next({ status: 400, mesage: `Price: ${price} is invalid`});
 //     }
-//     next({ status: 400, mesage: `Price: ${price} is invalid`});
 // }
 
-// function ifIdIsPresent(req, res, next) {
-//     const { dishId } = req.params;
-//     if(dishId) {
-//         if()
-//     }
-// }
+function ifIdIsPresent(req, res, next) {
+    const { dishId } = req.params;
+    const { data: { id, name, description, price, image_url } = {} } = req.body;
+    const dish = res.locals.foundDish;
+    if(id) {
+        if(id === dishId){
+            return next();
+        } else {
+            next({ status: 400, message: `Dish id and ${id} need to match`});
+        }
+    } else {
+        next();
+    };
+};
 
 function create(req, res) {
     const { data: { name, price, description, image_url } = {} } = req.body;
@@ -55,6 +65,8 @@ function create(req, res) {
         description,
         image_url,
     };
+    dishes.push(newDish);
+    res.status(201).json({ data: newDish});
 };
 
 function read(req, res) {
@@ -66,18 +78,21 @@ function read(req, res) {
 function update(req, res) {
     const { dishId } = req. params;
     const dish = res.locals.foundDish;
-    if(dishId = dish.id) {
-    const { data: {name, description, price, image_url } = {} } = req.body;
-    //sets fish properties 
+    const { data: { id, name, description, price, image_url } = {} } = req.body;
+    //if id properrty is provided dish.id = id, else id = nextId()
+    //sets dish properties
+    if(id){
+        dish.id = id;
+    } else {
+        dish.id= nextId();
+    };
     dish.name = name;
     dish.description = description;
     dish.price = price;
     dish.image_url = image_url;
+
     //displays newly modified dish
     res.json({ data: dish });
-} else {
-    res.sendStatus(400);
-}
 };
 
 // function destroy(req, res) {
@@ -103,6 +118,8 @@ module.exports ={
     read: [ dishExists, read ],
     update: [
         dishExists,
+        ifIdIsPresent,
+//        priceValidation,
         bodyDataHas("name"),
         bodyDataHas("description"),
         bodyDataHas("price"),
