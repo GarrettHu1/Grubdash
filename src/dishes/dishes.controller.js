@@ -1,10 +1,8 @@
 const path = require("path");
 const { stringify } = require("querystring");
 
-// Use the existing dishes data
 const dishes = require(path.resolve("src/data/dishes-data"));
 
-// Use this function to assign ID's when necessary
 const nextId = require("../utils/nextId");
 
 function list(req, res) {
@@ -95,8 +93,6 @@ function update(req, res) {
     //displays newly modified dish
     res.json({ data: dish });
 };
-
-// TODO: Implement the /dishes handlers needed to make the tests pass
 
 module.exports ={
     list,
