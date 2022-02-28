@@ -20,13 +20,49 @@ function bodyDataHas(propertyName) {
 
 function orderExists(req, res, next) {
     const { orderId } = req.params;
-    const foundOrder = orders.find((order) => order.id === Number(orderId));
+    const foundOrder = orders.find((order) => order.id === orderId);
     if(foundOrder) {
-    res.locals.currOrder = foundOrder;
+    res.locals.order = foundOrder;
     return next();
     } else {
-        return next({ status: 404, message: `Order ${orderId} not found`});
+        next({ status: 404, message: `Order ${orderId} not found`});
     };
+};
+
+function quantityPropertyIsValid(req, res, next) {
+    const { data: { dishes } = {} } = req.body;
+    if ( !dishes || !Array.isArray(dishes) || dishes.length === 0) {
+    return next({ status: 400, message: `dish` });
+    } else {
+        for( dish of dishes) {
+            const dishQuantity = Number(dish.quantity)
+            const index = dishes.indexOf(dish);
+            if( !dishQuantity || dishQuantity <= 0 || !Number.isInteger(dish.quantity)) {
+                return next({ status: 400, message: `Dish ${index} must have a quantity that is an integer greater than 0` })
+            };
+        };
+        return next();
+    };
+};
+
+function orderIdMatcher(req, res, next) {
+  const { orderId } = req.params;
+  const { data: { id } = {} } = req.body;
+  if(id && id !== orderId) {
+    return next({ status: 400, message: `Order id does not match route id. Order: ${id}, Route: ${orderId}.` })
+  } else {
+    return next();
+  }
+}
+
+function checkStatus(req, res, next) {
+  const { data: { status } = {} } = req.body;
+  const validStatus = [ "pending", "preparing", "out-for-delivery", "delivered"]
+  if(validStatus.includes(status)) {
+    return next();
+  } else {
+    return next({ status: 400, message: `Order must have a status of pending, preparing, out-for-delivery, delivered`})
+  };
 };
 
 function list(req, res){
@@ -34,27 +70,24 @@ function list(req, res){
 }
 
 function create(req, res) {
-    const { data: { deliverTo, mobileNumber, status,  dishes } = {} } = req.body;
+    const { data: { deliverTo, mobileNumber, dishes } = {} } = req.body;
     const newOrder = {
         id: nextId(),
         deliverTo,
         mobileNumber,
-        status,
-        dishes,
+        dishes
     };
     orders.push(newOrder);
     res.status(201).json({ data: newOrder });
 };
 
 function read(req, res) {
-    const { orderId } = req.params;
-    const foundOrder = orders.find((order) => order.id === Number(orderId));
-    res.status(201).json({ data: foundOrder })
-}
+    res.status(200).json({ data: res.locals.order });
+};
 
 function update(req, res) {
     const { data: { deliverTo, mobileNumber, status,  dishes } = {} } = req.body;
-    const order = res.locals.currOrder;
+    const order = res.locals.order;
 
     order.deliverTo = deliverTo;
     order.mobileNumber = mobileNumber;
@@ -64,16 +97,21 @@ function update(req, res) {
     res.json({ data: order });
 };
 
+function checkPending(req, res, next) {
+  const order = res.locals.order
+  if(order.status === "pending") {
+    return next();
+  } else {
+    return next({ status: 400, message: `An order cannot be deleted unless it is pending `})
+  }
+}
+
 function destroy(req, res) {
-    const { orderId } = req.params;
-    const order = res.locals.currOrder;
-    if(order.status !== "pending") {
-        return next({ status: 400, message: `An order cannot be deleted unless it is pending `})
-    } else {
+  const { orderId } = req.params;
+    const order = res.locals.order
         const index = orders.findIndex((order) => order.id === Number(orderId));
-        const deletedOrder = orders.splice(index, 1)
+        orders.splice(index, 1)
         res.sendStatus(204);
-    }
 }
 
 module.exports = {
@@ -81,8 +119,8 @@ module.exports = {
     create: [
         bodyDataHas("deliverTo"),
         bodyDataHas("mobileNumber"),
-        bodyDataHas("status"),
         bodyDataHas("dishes"),
+        quantityPropertyIsValid,
         create
     ],
     read: [ orderExists, read ],
@@ -91,7 +129,11 @@ module.exports = {
         bodyDataHas("mobileNumber"),
         bodyDataHas("status"),
         bodyDataHas("dishes"),
+        quantityPropertyIsValid,
+        orderExists,
+        orderIdMatcher,
+        checkStatus,
         update
     ],
-    delete: [ orderExists, destroy ],
+    delete: [ orderExists, checkPending, destroy ],
 };

@@ -49,12 +49,24 @@ function ifIdIsPresent(req, res, next) {
 
 // function priceValidation(req, res, next) {
 //     const { data: { price } = {} } = req.body;
-//     if(price) {
-//         return next();
+//     if(price < 0) {
+//         return next({ status: 400, mesage: `Price: ${price} is invalid`});
 //     } else {
-//         next({ status: 400, mesage: `Price: ${price} is invalid`});
+//         return next();
 //     }
 // }
+
+function pricePropertyIsValid(req, res, next) {
+    const { data: { name, price, description, image_url } = {} } = req.body;
+    if(!price){
+      next({ status: 400, message: `Dish must include a price` })
+    }
+      else if(!Number.isInteger(price) || price < 0 ){
+       next({ status: 400, message: `Dish must have a price that is an integer greater than 0` });
+    } else {
+         next();
+    }
+};
 
 function create(req, res) {
     const { data: { name, price, description, image_url } = {} } = req.body;
@@ -87,23 +99,11 @@ function update(req, res) {
     };
     dish.name = name;
     dish.description = description;
-    if(price && Number(price) > 0){
-        dish.price = price;
-    }
+    dish.price = price;
     dish.image_url = image_url;
-
     //displays newly modified dish
     res.json({ data: dish });
 };
-
-// function destroy(req, res) {
-//     const { dishId } = req.params;
-//     const index = dishes.findIndex((dish) => dish.id === Number(dishId));
-//     if(index > -1) {
-//         const deletedDish = dishes.splice(index, 1);
-//     };
-//     res.sendStatus(405);
-// };
 
 // TODO: Implement the /dishes handlers needed to make the tests pass
 
@@ -114,17 +114,18 @@ module.exports ={
         bodyDataHas("description"),
         bodyDataHas("price"),
         bodyDataHas("image_url"),
+        pricePropertyIsValid,
         create
     ],
     read: [ dishExists, read ],
     update: [
         dishExists,
         ifIdIsPresent,
-//        priceValidation,
         bodyDataHas("name"),
         bodyDataHas("description"),
         bodyDataHas("price"),
         bodyDataHas("image_url"),
+        pricePropertyIsValid,
         update
     ],
     dishExists,
