@@ -47,8 +47,33 @@ function create(req, res) {
 };
 
 function read(req, res) {
+    const { orderId } = req.params;
+    const foundOrder = orders.find((order) => order.id === Number(orderId));
+    res.status(201).json({ data: foundOrder })
+}
+
+function update(req, res) {
+    const { data: { deliverTo, mobileNumber, status,  dishes } = {} } = req.body;
     const order = res.locals.currOrder;
-    res.status(201).json({ data: order })
+
+    order.deliverTo = deliverTo;
+    order.mobileNumber = mobileNumber;
+    order.status = status;
+    order.dishes = dishes;
+
+    res.json({ data: order });
+};
+
+function destroy(req, res) {
+    const { orderId } = req.params;
+    const order = res.locals.currOrder;
+    if(order.status !== "pending") {
+        return next({ status: 400, message: `An order cannot be deleted unless it is pending `})
+    } else {
+        const index = orders.findIndex((order) => order.id === Number(orderId));
+        const deletedOrder = orders.splice(index, 1)
+        res.sendStatus(204);
+    }
 }
 
 module.exports = {
@@ -61,4 +86,12 @@ module.exports = {
         create
     ],
     read: [ orderExists, read ],
-}
+    update: [
+        bodyDataHas("deliverTo"),
+        bodyDataHas("mobileNumber"),
+        bodyDataHas("status"),
+        bodyDataHas("dishes"),
+        update
+    ],
+    delete: [ orderExists, destroy ],
+};
