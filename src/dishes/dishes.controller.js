@@ -17,9 +17,9 @@ function dishExists(req, res, next) {
     const foundDish = dishes.find((dish) => dish.id = Number(dishId));
     if (foundDish) {
         res.locals.foundDish = foundDish;
-        next();
+        return next();
     }
-    next({ status: 404, message: `Dish does not exist: ${dishId}.`});
+    return next({ status: 404, message: `Dish does not exist: ${dishId}.`});
 };
 
 function bodyDataHas(propertyName) {
@@ -28,18 +28,9 @@ function bodyDataHas(propertyName) {
         if(data[propertyName]) {
             return next();
         }
-        next({ status: 400, message: `Must have a ${propertyName}`});
+        return next({ status: 400, message: `Must have a ${propertyName}`});
     };
 };
-
-// function priceValidation(req, res, next) {
-//     const { data: { price } = {} } = req.body;
-//     if(!isNaN(price)) {
-//         return next();
-//     } else {
-//         next({ status: 400, mesage: `Price: ${price} is invalid`});
-//     }
-// }
 
 function ifIdIsPresent(req, res, next) {
     const { dishId } = req.params;
@@ -49,12 +40,21 @@ function ifIdIsPresent(req, res, next) {
         if(id === dishId){
             return next();
         } else {
-            next({ status: 400, message: `Dish id and ${id} need to match`});
+            return next({ status: 400, message: `Dish id and ${id} need to match`});
         }
     } else {
-        next();
+       return next();
     };
 };
+
+// function priceValidation(req, res, next) {
+//     const { data: { price } = {} } = req.body;
+//     if(price) {
+//         return next();
+//     } else {
+//         next({ status: 400, mesage: `Price: ${price} is invalid`});
+//     }
+// }
 
 function create(req, res) {
     const { data: { name, price, description, image_url } = {} } = req.body;
@@ -79,7 +79,6 @@ function update(req, res) {
     const { dishId } = req. params;
     const dish = res.locals.foundDish;
     const { data: { id, name, description, price, image_url } = {} } = req.body;
-    //if id properrty is provided dish.id = id, else id = nextId()
     //sets dish properties
     if(id){
         dish.id = id;
@@ -88,7 +87,9 @@ function update(req, res) {
     };
     dish.name = name;
     dish.description = description;
-    dish.price = price;
+    if(price && Number(price) > 0){
+        dish.price = price;
+    }
     dish.image_url = image_url;
 
     //displays newly modified dish
